@@ -19,13 +19,15 @@ export async function fetchNotes(params: {
   page?: number;
   perPage?: number;
   search?: string;
+  tag?: string;
 }): Promise<FetchNotesResponse> {
-  const { page = 1, perPage = 12, search = "" } = params;
+  const { page = 1, perPage = 12, search = "", tag } = params;
   const response: AxiosResponse<FetchNotesResponse> = await api.get("/notes", {
     params: {
       page,
       perPage,
       search: typeof search === "string" ? search : "",
+      tag,
     },
   });
   console.log("notes", response.data);

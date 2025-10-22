@@ -1,29 +1,39 @@
-// app/notes/page.tsx
 "use client";
 
-import NoteList from "../../components/NoteList/NoteList";
+import NoteList from "@/components/NoteList/NoteList";
+import css from "./NotesPage.module.css";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-
+import { fetchNotes } from "@/lib/api";
+import type { FetchNotesResponse } from "@/lib/api";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
-
-import { useDebounce } from "use-debounce";
-import { fetchNotes, FetchNotesResponse } from "@/lib/api";
-import NoteForm from "@/components/NoteForm/NoteForm";
 import Modal from "@/components/Modal/Modal";
-import css from "./NotesPage.module.css";
+import NoteForm from "@/components/NoteForm/NoteForm";
+import { useDebounce } from "use-debounce";
+import { NoteTag } from "@/types/note";
 
-function App() {
+interface Props {
+  search: string;
+  page: number;
+  tag?: NoteTag | undefined;
+}
+
+export default function NotesClient({ search, page, tag }: Props) {
   const [isOpenModal, setIsOpenModal] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(search);
   const [debouncedQuery] = useDebounce(query, 500);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(page);
 
   const { data, isLoading, error } = useQuery<FetchNotesResponse>({
-    queryKey: ["notes", debouncedQuery, currentPage],
+    queryKey: ["notes", debouncedQuery, currentPage, tag],
     queryFn: () =>
-      fetchNotes({ search: debouncedQuery, page: currentPage, perPage: 12 }),
+      fetchNotes({
+        search: debouncedQuery,
+        page: currentPage,
+        perPage: 12,
+        tag: tag,
+      }),
     enabled: true,
     placeholderData: (prev) => prev,
   });
@@ -34,6 +44,7 @@ function App() {
 
   const handleSearch = (value: string) => {
     setQuery(value);
+    setCurrentPage(1);
     console.log("searching for", value);
   };
 
@@ -64,7 +75,11 @@ function App() {
         </header>
         {isLoading && <p>Loading...</p>}
         {error && <p>Error loading notes</p>}
-        {data && <NoteList notes={data.notes} />}
+        {data && data.notes.length > 0 ? (
+          <NoteList notes={data.notes} />
+        ) : (
+          <p>No notes found</p>
+        )}
       </div>
       {isOpenModal && (
         <Modal onClose={() => setIsOpenModal(false)}>
@@ -74,5 +89,3 @@ function App() {
     </>
   );
 }
-
-export default App;
